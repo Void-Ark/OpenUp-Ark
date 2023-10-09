@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Response
+from fastapi import FastAPI, HTTPException, status, Response, Depends
 from fastapi.params import Body
 
 import psycopg2 
@@ -8,6 +8,12 @@ from time import sleep
 from pydantic import BaseModel
 from typing import Optional
 from random import randrange
+
+import database
+from sqlalchemy.orm import Session
+
+database.create_db()
+db = database.get_db() 
 
 class Post(BaseModel) : 
     title: str
@@ -31,25 +37,18 @@ while True :
         print(e) 
         sleep(5)
     
-
-    
-    
-DATA = [
-    {'id':101 , 'title': 'first post', "content": 'data of first post', "published": True, "rating": 32},
-    {'id':102 , 'title': 'second post', "content": 'data of second post', "published": False, "rating": 100},
-    {'id':103 , 'title': 'third post', "content": 'data of third post', "published": True},
-]
-
 app = FastAPI() 
 
 #------------------------------GET ALL POST--------------------------
 @app.get(
     path='/post', 
     status_code=status.HTTP_200_OK)
-async def get_all_post() : 
-    cursor.execute('''SELECT * FROM posts''')
-    data = cursor.fetchall()
-    return data
+async def get_all_post(db: Session = Depends(database.get_db)): 
+    data = database.crud.get_all_posts(db=db)
+    if data : return data
+    else : raise HTTPException(
+            status_code=status.HTTP_204_NO_CONTENT, 
+            detail="the table is empty!!")
 
 #------------------------------CREATE A POST --------------------------
 @app.post(
@@ -67,13 +66,9 @@ async def create_a_post(post: Post):
 @app.get(
     path='/post/{id}', 
     status_code=status.HTTP_302_FOUND)
-async def get_one(id: int): 
-    cursor.execute(
-        query='''SELECT * FROM posts WHERE id = %s ''', 
-        vars=(id, ))
-    data = cursor.fetchone()
-    if data : 
-        return data     
+async def get_one(id: int, db: Session = Depends(database.get_db)): 
+    data = database.crud.get_post_by_id(id, db)
+    if data : return data    
     else : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
