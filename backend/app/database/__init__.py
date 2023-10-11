@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database import models, crud
+from database import models, crud 
 
 # FORMAT =>  postgresql://<username>:<password>@<ip_address/host_name>/<database_name>
 SQLALCHEMY_DATABASE_URL = "postgresql://postgres:forgotansh1@localhost/Database-Ark"

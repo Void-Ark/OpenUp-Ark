@@ -1,48 +1,16 @@
-from fastapi import FastAPI, HTTPException, status, Response, Depends
-from fastapi.params import Body
-
-import psycopg2 
-from psycopg2.extras import RealDictCursor
-from time import sleep
-
-from pydantic import BaseModel
-from typing import Optional
-from random import randrange
-
-import database
+from fastapi import FastAPI, HTTPException, Response, Depends, status
 from sqlalchemy.orm import Session
+import database, schemas
+
 
 database.create_db()
-db = database.get_db() 
-
-class Post(BaseModel) : 
-    title: str
-    content: str 
-    published: bool = True 
-    rating: Optional[int] = None 
-    
-while True : 
-    try : 
-        conn = psycopg2.connect(
-            host='localhost',
-            dbname='Database-Ark', 
-            user='postgres', 
-            password='forgotansh1',
-            cursor_factory=RealDictCursor 
-            )
-        cursor = conn.cursor() 
-        print("the database connection is successful!!")
-        break 
-    except Exception as e : 
-        print(e) 
-        sleep(5)
-    
 app = FastAPI() 
 
 #------------------------------GET ALL POST--------------------------
 @app.get(
     path='/post', 
-    status_code=status.HTTP_200_OK)
+    status_code=status.HTTP_200_OK, 
+    response_model=list[schemas.PostGet])
 async def get_all_post(db: Session = Depends(database.get_db)): 
     data = database.crud.get_all_posts(db=db)
     if data : return data
@@ -53,19 +21,25 @@ async def get_all_post(db: Session = Depends(database.get_db)):
 #------------------------------CREATE A POST --------------------------
 @app.post(
     path='/post', 
-    status_code=status.HTTP_201_CREATED)
-async def create_a_post(post: Post): 
-    cursor.execute(
-        query='''INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *''', 
-        vars=(post.title, post.content, post.published))
-    data = cursor.fetchone()
-    conn.commit()
+    status_code=status.HTTP_201_CREATED, 
+    response_model=schemas.Post)
+async def create_a_post(
+    post: schemas.PostCreate, 
+    db: Session = Depends(database.get_db)):
+        
+    try : 
+        data = database.crud.create_a_post(post=post, db=db) 
+    except Exception as e : 
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=f"the data is not acceptable may be because of some values become null which are set as not nullable (title, content)")
     return data
 
 #---------------------------GET A POST BY ID --------------------------
 @app.get(
     path='/post/{id}', 
-    status_code=status.HTTP_302_FOUND)
+    status_code=status.HTTP_302_FOUND, 
+    response_model=schemas.PostGet)
 async def get_one(id: int, db: Session = Depends(database.get_db)): 
     data = database.crud.get_post_by_id(id, db)
     if data : return data    
@@ -77,39 +51,38 @@ async def get_one(id: int, db: Session = Depends(database.get_db)):
 #------------------------DELETE A POST BY ID --------------------------
 @app.delete(
     path='/post/{id}', 
-    status_code=status.HTTP_204_NO_CONTENT
-)
-async def delete_post_by_id(id: int):
-    cursor.execute(
-        query='''DELETE FROM posts where id = %s RETURNING *''', 
-        vars=(id, ))
-    
-    data = cursor.fetchone()
+    status_code=status.HTTP_204_NO_CONTENT, 
+    response_model=schemas.PostGet)
+async def delete_post_by_id(
+    id: int, 
+    db: Session = Depends(database.get_db)):
      
+    data = database.crud.delete_a_post_by_id(id=id, db=db) 
     if not data : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Given id {id} is not found")
-    
-    conn.commit() 
-
+            detail=f"the given id {id} is not in database")
+    return data 
 
 #-------------------------UPDATE A POST BY ID ------------------------
 @app.put(
     path="/post/{id}",
-    status_code=status.HTTP_200_OK)
-async def update_post_by_id(id: int, post: Post): 
-    cursor.execute(
-        query='''UPDATE posts 
-                SET title = %s, content = %s, published = %s 
-                where id = %s returning *''', 
-        vars=(post.title, post.content, post.published, id))
-    data = cursor.fetchone()
-    
+    status_code=status.HTTP_200_OK, 
+    response_model=schemas.PostGet)
+async def update_post_by_id(
+    id: int, 
+    post: schemas.PostUpdate, 
+    db: Session = Depends(database.get_db)):
+     
+    try : 
+        data = database.crud.update_a_post_by_id(id, post, db)
+    except Exception as e : 
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"may be the given id {id} is not found :{e}"
+        )
     if data == None : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f"the given id {id} is not found!!")    
-    
-    conn.commit() 
     return data
