@@ -1,7 +1,9 @@
 from sqlalchemy import select, insert, delete, update
 from sqlalchemy.orm import Session
 from database import models
-import schemas, auth
+import schemas
+from pydantic import EmailStr
+import password_token
 
 def get_all_posts(db: Session) : 
     stmt = select(models.Posts)
@@ -31,18 +33,22 @@ def update_a_post_by_id(id:int, post: schemas.PostUpdate, db:Session):
     db.commit()
     return result.scalar()
 
+def post_get_id_by_title(title: str, db: Session) : 
+    stmt = select(models.Posts.id).where(models.Posts.title == title) 
+    result = db.execute(stmt) 
+    return result.scalar()
 
 #=========================================================================================================================
 
 def user_create(user: schemas.UserCreate, db: Session): 
-    user.password = auth.get_password_hash(user.password)
+    user.password = password_token.get_password_hash(user.password)
     stmt = insert(models.Users).values(**user.model_dump()).returning(models.Users)
     result = db.execute(stmt) 
     db.commit()
     return result.scalar()
     
 def user_update(id: int, user: schemas.UserUpdate, db: Session): 
-    user.password = auth.get_password_hash(user.password)
+    user.password = password_token.get_password_hash(user.password)
     stmt = update(models.Users).where(models.Users.id == id).values(**user.model_dump()).returning(models.Users)
     result = db.execute(stmt)
     db.commit() 
@@ -62,4 +68,20 @@ def user_get(id: int, db: Session):
 def user_get_all(db: Session): 
     stmt = select(models.Users)
     result = db.execute(stmt) 
-    return result
+    return result.scalars().all()
+
+def user_get_password(id:int, db: Session) :
+    stmt = select(models.Users.password).where(models.Users.id == id)
+    result = db.execute(stmt) 
+    return result.scalar()
+
+def user_get_id_by_email(email: EmailStr, db: Session) : 
+    stmt = select(models.Users.id).where(models.Users.email == email)
+    result = db.execute(stmt) 
+    return result.scalar() 
+
+def user_get_data_by_email(email: EmailStr, db: Session) : 
+    id = user_get_id_by_email(email, db)
+    return user_get(id, db) if id else None
+    
+    

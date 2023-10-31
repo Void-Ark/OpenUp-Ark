@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, AwareDatetime, EmailStr
 
 class Post(BaseModel) : 
@@ -17,8 +18,17 @@ class User(BaseModel):
     password: str 
 class UserCreate(User): pass 
 class UserUpdate(User): pass
- 
+class UserLogin(User): pass 
+class UserSignIn(User): pass 
+
 class UserGet(BaseModel):  
     id: int 
     email: EmailStr
     created_at: AwareDatetime 
+    
+class token(BaseModel) :
+    access_token: str 
+    token_type: str
+    
+class tokenData(BaseModel) : 
+    id: Optional[int] = None

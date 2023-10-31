@@ -1,13 +1,12 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session 
-import schemas 
-import database
+import schemas, database, oauth2
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
 #------------------------------GET ALL POST--------------------------
 @router.get(
-    path='/post', 
+    path='/', 
     status_code=status.HTTP_200_OK, 
     response_model=list[schemas.PostGet])
 async def get_all_post(db: Session = Depends(database.get_db)): 
@@ -24,7 +23,8 @@ async def get_all_post(db: Session = Depends(database.get_db)):
     response_model=schemas.Post)
 async def create_a_post(
     post: schemas.PostCreate, 
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db), 
+    current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):        
     data = database.crud.create_a_post(post=post, db=db) 
     if not data : 
@@ -52,7 +52,8 @@ async def get_one(id: int, db: Session = Depends(database.get_db)):
     status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post_by_id(
     id: int, 
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db), 
+    current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):     
     data = database.crud.delete_a_post_by_id(id=id, db=db) 
     if not data : 
@@ -69,7 +70,8 @@ async def delete_post_by_id(
 async def update_post_by_id(
     id: int, 
     post: schemas.PostUpdate, 
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db), 
+    current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):
     data = database.crud.update_a_post_by_id(id, post, db)
     if data == None : 
@@ -77,4 +79,5 @@ async def update_post_by_id(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f"the given id {id} is not found!!")    
     return data
+
 

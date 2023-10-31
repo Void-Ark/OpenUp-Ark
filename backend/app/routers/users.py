@@ -1,9 +1,22 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session 
-import schemas 
-import database
+import schemas, oauth2, database
+
 
 router = APIRouter(prefix='/users', tags=['users'])
+
+
+#----------------------------------------- GET ALL USERS -----------------------------------------------
+@router.get(
+    path='/', 
+    status_code=status.HTTP_200_OK, 
+    response_model=list[schemas.UserGet]) 
+def get_all(db: Session = Depends(database.get_db)) -> list[dict]: 
+    data = database.crud.user_get_all(db) 
+    if not data : raise HTTPException(
+                                status_code=status.HTTP_204_NO_CONTENT, 
+                                detail=f"there is no content!")
+    return data 
 
 #----------------------------------------- CREATE A USER ------------------------------------------------
 @router.post(
@@ -38,4 +51,9 @@ async def user_get_by_id(id: int, db: Session = Depends(database.get_db)):
 @router.delete(
     path='/{id}', 
     status_code=status.HTTP_204_NO_CONTENT) 
-def user_delete_by_id(id: int, db: Session = Depends(database.get_db)): pass
+def user_delete_by_id(
+    id: int, 
+    db: Session = Depends(database.get_db), 
+    current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
+): 
+    pass
