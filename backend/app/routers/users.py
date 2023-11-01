@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session 
 import schemas, oauth2, database
+from typing import Sequence
 
 
 router = APIRouter(prefix='/users', tags=['users'])
@@ -11,12 +12,12 @@ router = APIRouter(prefix='/users', tags=['users'])
     path='/', 
     status_code=status.HTTP_200_OK, 
     response_model=list[schemas.UserGet]) 
-def get_all(db: Session = Depends(database.get_db)) -> list[dict]: 
+def get_all(db: Session = Depends(database.get_db)) -> list[schemas.UserGet]: 
     data = database.crud.user_get_all(db) 
     if not data : raise HTTPException(
                                 status_code=status.HTTP_204_NO_CONTENT, 
                                 detail=f"there is no content!")
-    return data 
+    return data                                                                 # type: ignore # not able to resolve 
 
 #----------------------------------------- CREATE A USER ------------------------------------------------
 @router.post(

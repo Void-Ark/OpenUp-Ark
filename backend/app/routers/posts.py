@@ -20,13 +20,13 @@ async def get_all_post(db: Session = Depends(database.get_db)):
 @router.post(
     path='/', 
     status_code=status.HTTP_201_CREATED, 
-    response_model=schemas.Post)
+    response_model=schemas.PostGet)
 async def create_a_post(
     post: schemas.PostCreate, 
     db: Session = Depends(database.get_db), 
     current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):        
-    data = database.crud.create_a_post(post=post, db=db) 
+    data = database.crud.create_a_post(post=post, db=db, user_id=current_user_id.id) 
     if not data : 
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -55,11 +55,11 @@ async def delete_post_by_id(
     db: Session = Depends(database.get_db), 
     current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):     
-    data = database.crud.delete_a_post_by_id(id=id, db=db) 
+    data = database.crud.delete_a_post_by_id(id=id, db=db, user_id=current_user_id.id) 
     if not data : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"the given id {id} is not in database")
+            detail=f"the given id {id} is not in database or you are not allowed to delete another user post")
 
 
 #-------------------------UPDATE A POST BY ID ------------------------
@@ -73,11 +73,11 @@ async def update_post_by_id(
     db: Session = Depends(database.get_db), 
     current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):
-    data = database.crud.update_a_post_by_id(id, post, db)
+    data = database.crud.update_a_post_by_id(id, post, db, current_user_id.id)
     if data == None : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"the given id {id} is not found!!")    
+            detail=f"the given id {id} is not found!! OR you are not allowed to delete another user post")    
     return data
 
 

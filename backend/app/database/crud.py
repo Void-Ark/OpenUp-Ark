@@ -15,20 +15,22 @@ def get_post_by_id(id:int, db: Session) :
     result = db.execute(stmt) 
     return result.scalar()
 
-def create_a_post(post: schemas.PostCreate , db: Session):    # post schema is defined in main so lets make schema file later
-    stmt = insert(models.Posts).values(**post.model_dump()).returning(models.Posts)
+def create_a_post(post: schemas.PostCreate , db: Session, user_id: int):    # post schema is defined in main so lets make schema file later
+    post_copy_dict = post.model_dump() 
+    post_copy_dict['user_id'] = user_id
+    stmt = insert(models.Posts).values(**post_copy_dict).returning(models.Posts)
     result = db.execute(stmt) 
     db.commit()
     return result.scalar()
 
-def delete_a_post_by_id(id: int, db: Session):
-    stmt = delete(models.Posts).where(models.Posts.id == id).returning(models.Posts)
+def delete_a_post_by_id(id: int, db: Session, user_id: int):
+    stmt = delete(models.Posts).where(models.Posts.id == id).where(models.Posts.id == user_id).returning(models.Posts)
     result = db.execute(stmt) 
     db.commit()
     return result.scalar() 
 
-def update_a_post_by_id(id:int, post: schemas.PostUpdate, db:Session): 
-    stmt = update(models.Posts).where(models.Posts.id == id).values(**post.model_dump()).returning(models.Posts) 
+def update_a_post_by_id(id:int, post: schemas.PostUpdate, db:Session, user_id: int): 
+    stmt = update(models.Posts).where(models.Posts.id == id).where(models.Posts.user_id == user_id).values(**post.model_dump()).returning(models.Posts) 
     result = db.execute(stmt)
     db.commit()
     return result.scalar()
@@ -66,9 +68,12 @@ def user_get(id: int, db: Session):
     return result.scalar()
 
 def user_get_all(db: Session): 
-    stmt = select(models.Users)
+    stmt = select(models.Users) #["id", "email", "created_at"])
+    print(stmt)
     result = db.execute(stmt) 
-    return result.scalars().all()
+    ret = result.scalars().all()
+    print(ret)
+    return ret
 
 def user_get_password(id:int, db: Session) :
     stmt = select(models.Users.password).where(models.Users.id == id)
