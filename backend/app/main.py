@@ -12,3 +12,6 @@ app.include_router(router= routers.users.router)
 
 app.include_router(router= routers.posts.router)
 
+app.include_router(router= routers.votes.router)
+
+

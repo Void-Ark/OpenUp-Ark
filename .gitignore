@@ -1,2 +1,4 @@
 # ignoring virtual environment
 backend/venv/
+.env 
+__pycache__

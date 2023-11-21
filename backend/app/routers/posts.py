@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session 
 import schemas, database, oauth2
+from typing import Optional
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
@@ -8,9 +9,11 @@ router = APIRouter(prefix='/posts', tags=['posts'])
 @router.get(
     path='/', 
     status_code=status.HTTP_200_OK, 
-    response_model=list[schemas.PostGet])
-async def get_all_post(db: Session = Depends(database.get_db)): 
-    data = database.crud.get_all_posts(db=db)
+    response_model=list[schemas.PostOut])
+async def get_all_post(db: Session = Depends(database.get_db), limit: int=4, skip: int=0, search: Optional[str]=''): 
+    print("start")
+    data = database.crud.get_all_posts(db=db, limit=limit, offset=skip, search=search)
+    print("end")
     if data : return data
     else : raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT, 
@@ -73,7 +76,7 @@ async def update_post_by_id(
     db: Session = Depends(database.get_db), 
     current_user_id : schemas.tokenData = Depends(oauth2.get_current_user)
 ):
-    data = database.crud.update_a_post_by_id(id, post, db, current_user_id.id)
+    data = database.crud.update_a_post_by_id(id=id, post=post, db=db, user_id=current_user_id.id)
     if data == None : 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 

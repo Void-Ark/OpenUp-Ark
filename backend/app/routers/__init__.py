@@ -1,1 +1,1 @@
-from . import posts, users, auth
+from . import posts, users, auth, votes

@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, Annotated
 from pydantic import BaseModel, AwareDatetime, EmailStr
+from pydantic import Field, conint
 
 
     
@@ -36,5 +37,12 @@ class PostCreate(PostBase) : pass
 class PostUpdate(PostBase) : pass
 class PostGet(PostBase) : 
     id : int
-    user_id: int 
     created_at: AwareDatetime
+    user: UserGet
+class PostOut(BaseModel) : 
+    Posts: PostGet
+    votes: int 
+
+    
+class Vote(BaseModel): 
+    post_id: int 
