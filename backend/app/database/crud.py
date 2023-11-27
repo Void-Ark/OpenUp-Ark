@@ -11,15 +11,16 @@ from typing import Optional
 
 def get_all_posts(limit: int, offset: int, search: Optional[str], 
         db: Session) : 
-    #stmt = select(models.Posts).filter(models.Posts.title.contains(search)).limit(limit=limit).offset(offset=offset)
-    #j = join(models.Posts, models.Vote, models.Posts.id == models.Vote.post_id, isouter=True)
-    #stmt = select(func.count(models.Vote.post_id).label("votes"), models.Posts.id).select_from(j).group_by(models.Posts.id)
-    stmt = select(models.Posts, func.count(models.Vote.post_id).label('votes')).join(models.Vote, models.Vote.post_id == models.Posts.id, isouter=True).group_by(models.Posts.id)
-    print(f"STMT: F{stmt}")
+    stmt = (select(models.Posts, func.count(models.Vote.post_id).label('votes'))
+            .join(models.Vote, models.Vote.post_id == models.Posts.id, isouter=True)
+            .group_by(models.Posts.id)
+            .filter(models.Posts.title.contains(search))
+            .limit(limit=limit)
+            .offset(offset=offset))
+    print(f"STMT: {stmt}")
     result = db.execute(stmt)
     print("Returning Result")
     return tuple(map(lambda row: row._asdict(), result))
-    #return [row._asdict() for row in result]
 
 def get_post_by_id(id: int,
         db: Session) :
